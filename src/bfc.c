@@ -12,8 +12,8 @@ int main(int argc, char **argv){
 	printf("	movq	%%rsp, %%rbp\n");
 	printf("	subq	$10000, %%rsp\n");
 	
+	printf("	movq	$0, %%rax\n");
 	printf("	movq	$0, %%rbx\n");
-	printf("	movq	$0, %%rcx\n");
 	
 	char c;
 	int i = 0;
@@ -33,11 +33,12 @@ int main(int argc, char **argv){
 			printf("	movl	$0, %%eax\n");
 		} else if (c == ',') {
 			printf("	call	getchar@PLT\n");
-			printf("	movb	%%al, -10000(%%rbp, %%rbx, 8)\n");
+			printf("	movb	%%al, -10000(%%rbp,%%rbx,8)\n");
+			printf("	movq	$0, %%rax\n");
 		} else if (c == '[') {
 			int cnt = 0, cnt_brackets = 0;
 			char c;
-			for (int depth = 0; depth > 0 || c != ']'; cnt++) {
+			for (int depth = 1; depth > 0 || c != ']'; cnt++) {
 				c = getc(fp);
 				if (c == '[') {
 					cnt_brackets++;
@@ -48,14 +49,16 @@ int main(int argc, char **argv){
 				}
 			}
 			fseek(fp, -cnt, SEEK_CUR);
-			printf("	cmpq	$0, -10000(%%rbp,%%rbx,8)\n");
+			printf("	movq	-10000(%%rbp,%%rbx,8), %%rax\n");
+			printf("	cmpq	$0, %%rax\n");
+			printf("	movq	$0, %%rax\n");
 			printf("	je		GOTO_%d\n", i + cnt_brackets);
 			printf("GOTO_%d:\n", i);
 			i++;
 		} else if (c == ']') {
 			int cnt = 0, cnt_brackets = 0;
 			char c;
-			for (int depth = 0; depth > 0 || c != '['; cnt++) {
+			for (int depth = 1; depth > 0 || c != '['; cnt++) {
 				fseek(fp, -2, SEEK_CUR);
 				c = getc(fp);
 				if (c == '[') {
@@ -67,16 +70,17 @@ int main(int argc, char **argv){
 				}
 			}
 			fseek(fp, cnt, SEEK_CUR);
-			printf("	movq	-10000(%%rbp,%%rbx,8), %%rcx\n");
-			printf("	cmpq	$0, %%rcx\n");
+			printf("	movq	-10000(%%rbp,%%rbx,8), %%rax\n");
+			printf("	cmpq	$0, %%rax\n");
+			printf("	movq	$0, %%rax\n");
 			printf("	jne		GOTO_%d\n", i - cnt_brackets);
 			printf("GOTO_%d:\n", i);
 			i++;
 		}
 	}
 	
-	printf("	leave\n");
-	printf("	ret\n");
+	printf("	leaveq\n");
+	printf("	retq\n");
 	
 	return 0;
 }
