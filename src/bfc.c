@@ -34,7 +34,9 @@ int main(int argc, char **argv){
 		} else if (c == ',') {
 			printf("	call	getchar@PLT\n");
 			printf("	movb	%%al, -10000(%%rbp,%%rbx,8)\n");
+			printf("	cmpb	$-1, %%al\n");
 			printf("	movq	$0, %%rax\n");
+			printf("	je	EXIT\n");
 		} else if (c == '[') {
 			int cnt = 0, cnt_brackets = 0;
 			char c;
@@ -79,6 +81,7 @@ int main(int argc, char **argv){
 		}
 	}
 	
+	printf("EXIT:\n");
 	printf("	leaveq\n");
 	printf("	retq\n");
 	
