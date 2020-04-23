@@ -6,7 +6,7 @@ cnt_failed=0
 
 echo "----------------------------------"
 
-rm $output/*
+rm $output/* 2>/dev/null
 
 OK(){
 	echo "\e[32;1mOK\e[m"

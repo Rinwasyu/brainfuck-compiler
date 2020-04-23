@@ -5,6 +5,10 @@ int main(int argc, char **argv){
 	
 	FILE *fp = fopen(argv[1], "r");
 	
+	if (fp == NULL) {
+		return -1;
+	}
+	
 	printf(".globl main\n");
 	printf(".text\n");
 	printf("main:\n");
