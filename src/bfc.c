@@ -20,7 +20,7 @@ int main(int argc, char **argv){
 	printf("	movq	$0, %%rbx\n");
 	
 	char c;
-	int i = 0;
+	int cnt_goto = 0;
 	while ((c = fgetc(fp)) != -1) {
 		if (c == '+') {
 			printf("	addq	$1, -10000(%%rbp,%%rbx,8)\n");
@@ -42,9 +42,9 @@ int main(int argc, char **argv){
 			printf("	movq	$0, %%rax\n");
 			printf("	je	EXIT\n");
 		} else if (c == '[') {
-			int cnt = 0, cnt_brackets = 0;
+			int cnt_chars = 0, cnt_brackets = 0;
 			char c;
-			for (int depth = 1; depth > 0 || c != ']'; cnt++) {
+			for (int depth = 1; depth > 0 || c != ']'; cnt_chars++) {
 				c = getc(fp);
 				if (c == '[') {
 					cnt_brackets++;
@@ -54,17 +54,17 @@ int main(int argc, char **argv){
 					depth--;
 				}
 			}
-			fseek(fp, -cnt, SEEK_CUR);
+			fseek(fp, -cnt_chars, SEEK_CUR);
 			printf("	movq	-10000(%%rbp,%%rbx,8), %%rax\n");
 			printf("	cmpq	$0, %%rax\n");
 			printf("	movq	$0, %%rax\n");
-			printf("	je		GOTO_%d\n", i + cnt_brackets);
-			printf("GOTO_%d:\n", i);
-			i++;
+			printf("	je		GOTO_%d\n", cnt_goto + cnt_brackets);
+			printf("GOTO_%d:\n", cnt_goto);
+			cnt_goto++;
 		} else if (c == ']') {
-			int cnt = 0, cnt_brackets = 0;
+			int cnt_chars = 0, cnt_brackets = 0;
 			char c;
-			for (int depth = 1; depth > 0 || c != '['; cnt++) {
+			for (int depth = 1; depth > 0 || c != '['; cnt_chars++) {
 				fseek(fp, -2, SEEK_CUR);
 				c = getc(fp);
 				if (c == '[') {
@@ -75,19 +75,21 @@ int main(int argc, char **argv){
 					depth++;
 				}
 			}
-			fseek(fp, cnt, SEEK_CUR);
+			fseek(fp, cnt_chars, SEEK_CUR);
 			printf("	movq	-10000(%%rbp,%%rbx,8), %%rax\n");
 			printf("	cmpq	$0, %%rax\n");
 			printf("	movq	$0, %%rax\n");
-			printf("	jne		GOTO_%d\n", i - cnt_brackets);
-			printf("GOTO_%d:\n", i);
-			i++;
+			printf("	jne		GOTO_%d\n", cnt_goto - cnt_brackets);
+			printf("GOTO_%d:\n", cnt_goto);
+			cnt_goto++;
 		}
 	}
 	
 	printf("EXIT:\n");
 	printf("	leaveq\n");
 	printf("	retq\n");
+	
+	fclose(fp);
 	
 	return 0;
 }

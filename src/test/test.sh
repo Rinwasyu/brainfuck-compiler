@@ -1,5 +1,8 @@
 #!/bin/sh
 
+# C Compiler
+CC=gcc
+
 output='./output'
 cnt_ok=0
 cnt_failed=0
@@ -18,8 +21,15 @@ FAILED(){
 	cnt_failed=$(($cnt_failed+1))
 }
 
+echo -n "  C Compiler ($CC)\e[30G"
+which $CC >/dev/null
+if [ $? -eq 0 ]
+then OK
+else FAILED; exit
+fi
+
 echo -n "  Brainfuck-compiler\e[30G"
-gcc -o $output/bfc ../bfc.c
+$CC -o $output/bfc ../bfc.c
 if [ $? -eq 0 ]
 then OK
 else FAILED; exit
@@ -31,7 +41,7 @@ do
 	timeout -sKILL 10 $output/bfc "$fname" > "$output/$(basename $fname .bf).s"
 	if [ $? -eq 0 ]
 	then
-		gcc -o "$output/$(basename $fname .bf).bin" "$output/$(basename $fname .bf).s"
+		$CC -o "$output/$(basename $fname .bf).bin" "$output/$(basename $fname .bf).s"
 		if [ $? -eq 0 ]
 		then
 			timeout -sKILL 5 sh -c "cat $(basename $fname .bf).in | $output/$(basename $fname .bf).bin" > $output/$(basename $fname .bf).out 2>/dev/null
