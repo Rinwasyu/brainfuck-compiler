@@ -19,6 +19,8 @@
  */
 
 #include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 #include <elf.h>
 
 void dump_elf64_ehdr(Elf64_Ehdr *ehdr) {
@@ -42,7 +44,7 @@ void dump_elf64_ehdr(Elf64_Ehdr *ehdr) {
 	printf("\tehdr->e_shstrndx:  %04x\n", ehdr->e_shstrndx);
 }
 
-void dump_elf64_phdr(Elf64_Phdr *phdr) {
+void dump_elf64_phdr(Elf64_Phdr *phdr, Elf64_Ehdr *ehdr) {
 	printf("\n");
 	printf("\tphdr->p_type:      %04x %s\n", phdr->p_type,
 			phdr->p_type == PT_NULL ? "(PT_NULL)" :
@@ -64,9 +66,11 @@ void dump_elf64_phdr(Elf64_Phdr *phdr) {
 	printf("\tphdr->p_align:     %016lx\n", phdr->p_align);
 }
 
-void dump_elf64_shdr(Elf64_Shdr *shdr) {
+void dump_elf64_shdr(Elf64_Shdr *shdr, Elf64_Ehdr *ehdr, char *shdr_strtb_buf) {
 	printf("\n");
-	printf("\tshdr->sh_name:     %04x\n", shdr->sh_name);
+	printf("\tshdr->sh_name:     %04x (%s)\n", shdr->sh_name,
+			shdr_strtb_buf
+		);
 	printf("\tshdr->sh_type:     %04x %s\n", shdr->sh_type, 
 			shdr->sh_type == SHT_NULL ? "(SHT_NULL)" :
 			shdr->sh_type == SHT_PROGBITS ? "(SHT_PROGBITS)" :
@@ -101,7 +105,7 @@ int main(int argc, char **argv) {
 	}
 	
 	FILE *fp = fopen(argv[1], "r");
-	//FILE *fp = fopen("dump_elf", "r");
+	//FILE *fp = fopen("read_elf", "r");
 	
 	Elf64_Ehdr ehdr;
 	Elf64_Phdr phdr;
@@ -117,17 +121,27 @@ int main(int argc, char **argv) {
 		fseek(fp, ehdr.e_phoff, SEEK_SET);
 		for (int i = 0; i < ehdr.e_phnum; i++) {
 			fread(&phdr, sizeof(phdr), 1, fp);
-			dump_elf64_phdr(&phdr);
+			dump_elf64_phdr(&phdr, &ehdr);
 		}
 	}
 	
 	// if section header table exists
 	if (ehdr.e_shoff != 0) {
 		printf("\n******************** Section Headers ********************\n");
+		Elf64_Shdr shstrtb;
+		char *shdr_strtb_buf;
+		fseek(fp, ehdr.e_shoff + ehdr.e_shentsize * ehdr.e_shstrndx, SEEK_SET);
+		fread(&shstrtb, sizeof(shstrtb), 1, fp);
+		dump_elf64_shdr(&shstrtb, &ehdr, "");
+		shdr_strtb_buf = (char *)malloc(sizeof(char) * (shstrtb.sh_size+1));
+		fseek(fp, shstrtb.sh_offset, SEEK_SET);
+		printf("shstrtb.sh_size : %ld\n", shstrtb.sh_size);
+		fread(shdr_strtb_buf, shstrtb.sh_size, 1, fp);
 		fseek(fp, ehdr.e_shoff, SEEK_SET);
 		for (int i = 0; i < ehdr.e_shnum; i++) {
+			fseek(fp, ehdr.e_shoff + ehdr.e_shentsize * i, SEEK_SET);
 			fread(&shdr, sizeof(shdr), 1, fp);
-			dump_elf64_shdr(&shdr);
+			dump_elf64_shdr(&shdr, &ehdr, &shdr_strtb_buf[shdr.sh_name]);
 		}
 	}
 	
